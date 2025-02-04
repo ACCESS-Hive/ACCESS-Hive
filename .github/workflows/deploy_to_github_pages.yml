@@ -99,8 +99,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Build full website using main, development and open PRs head branches
-      # (excluding `development` and `main` as PR head branches)
+      # Build main website, development and PR previews (not forks)
       - name: Build full website
         env:
           GH_TOKEN: ${{ github.token }} # Required for gh usage
@@ -115,7 +114,8 @@ jobs:
           git checkout development
           mkdocs build -f mkdocs.yml -d ../website/development-website
           echo "Build PR websites"
-          open_pr_info=$(gh pr list --json headRefOid,number,headRefName --jq '.[] | select(.headRefName!="development" and .headRefName!="main")')
+          # Search for open PRs, excluding PRs from forks and PRs having `development` or `main` as head
+          open_pr_info=$(gh pr list --json headRepositoryOwner,headRefOid,number,headRefName --jq '.[] | select(.headRefName!="development" and .headRefName!="main" and .headRepositoryOwner.login=="${{ github.repository_owner }}")')
           pr_nums=($(jq '.number' <<< "$open_pr_info"))
           pr_sha=($(jq -r '.headRefOid' <<< "$open_pr_info"))
           if [[ -n $pr_nums ]]; then
